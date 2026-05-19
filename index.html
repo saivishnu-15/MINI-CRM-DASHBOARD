@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <title>Mini CRM Dashboard</title>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial;
+    }
+
+    body{
+      background:#f4f7fb;
+      padding:30px;
+    }
+
+    .container{
+      max-width:1000px;
+      margin:auto;
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:25px;
+    }
+
+    /* DASHBOARD */
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:15px;
+      margin-bottom:30px;
+    }
+
+    .card{
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      text-align:center;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .card h2{
+      color:#007bff;
+      margin-top:10px;
+    }
+
+    /* FORM */
+
+    .form-box{
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      margin-bottom:30px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    input, textarea{
+      width:100%;
+      padding:12px;
+      margin-top:12px;
+      border:1px solid #ccc;
+      border-radius:6px;
+    }
+
+    textarea{
+      height:100px;
+      resize:none;
+    }
+
+    button{
+      padding:10px 18px;
+      border:none;
+      border-radius:6px;
+      color:white;
+      cursor:pointer;
+      margin-top:12px;
+    }
+
+    .add-btn{
+      background:#007bff;
+    }
+
+    .delete-btn{
+      background:red;
+    }
+
+    /* LEAD CARD */
+
+    .lead-card{
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      margin-bottom:15px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .lead-card p{
+      margin:8px 0;
+    }
+
+    select{
+      padding:8px;
+      margin-top:10px;
+      border-radius:6px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Mini CRM Dashboard</h1>
+
+  <!-- DASHBOARD -->
+
+  <div class="stats">
+
+    <div class="card">
+      <h3>Total Leads</h3>
+      <h2 id="total">0</h2>
+    </div>
+
+    <div class="card">
+      <h3>New</h3>
+      <h2 id="new">0</h2>
+    </div>
+
+    <div class="card">
+      <h3>Contacted</h3>
+      <h2 id="contacted">0</h2>
+    </div>
+
+    <div class="card">
+      <h3>Closed</h3>
+      <h2 id="closed">0</h2>
+    </div>
+
+  </div>
+
+  <!-- FORM -->
+
+  <div class="form-box">
+
+    <input
+      id="name"
+      placeholder="Enter Name"
+    >
+
+    <input
+      id="email"
+      placeholder="Enter Email"
+    >
+
+    <textarea
+      id="message"
+      placeholder="Enter Message"
+    ></textarea>
+
+    <button
+      class="add-btn"
+      onclick="addLead()"
+    >
+      Add Lead
+    </button>
+
+  </div>
+
+  <!-- LEADS -->
+
+  <div id="list"></div>
+
+</div>
+
+<script>
+
+const API =
+  "http://localhost:5000/api/leads";
+
+/* ADD LEAD */
+
+async function addLead(){
+
+  await fetch(API,{
+
+    method:"POST",
+
+    headers:{
+      "Content-Type":"application/json"
+    },
+
+    body:JSON.stringify({
+
+      name:
+        document.getElementById("name").value,
+
+      email:
+        document.getElementById("email").value,
+
+      message:
+        document.getElementById("message").value
+
+    })
+
+  });
+
+  document.getElementById("name").value = "";
+
+  document.getElementById("email").value = "";
+
+  document.getElementById("message").value = "";
+
+  loadLeads();
+
+}
+
+
+/* LOAD LEADS */
+
+async function loadLeads(){
+
+  const res =
+    await fetch(API);
+
+  const data =
+    await res.json();
+
+  const list =
+    document.getElementById("list");
+
+  list.innerHTML = "";
+
+  /* DASHBOARD */
+
+  document.getElementById("total")
+    .innerText = data.length;
+
+  document.getElementById("new")
+    .innerText =
+      data.filter(
+        l => l.status === "new"
+      ).length;
+
+  document.getElementById("contacted")
+    .innerText =
+      data.filter(
+        l => l.status === "contacted"
+      ).length;
+
+  document.getElementById("closed")
+    .innerText =
+      data.filter(
+        l => l.status === "closed"
+      ).length;
+
+  /* DISPLAY LEADS */
+
+  data.forEach((lead) => {
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "lead-card";
+
+    div.innerHTML = `
+
+      <h3>${lead.name}</h3>
+
+      <p>
+        <b>Email:</b>
+        ${lead.email}
+      </p>
+
+      <p>
+        <b>Message:</b>
+        ${lead.message}
+      </p>
+
+      <p>
+        <b>Status:</b>
+      </p>
+
+      <select
+        onchange="
+          updateStatus(
+            '${lead._id}',
+            this.value
+          )
+        "
+      >
+
+        <option
+          value="new"
+          ${lead.status === "new"
+            ? "selected" : ""}
+        >
+          new
+        </option>
+
+        <option
+          value="contacted"
+          ${lead.status === "contacted"
+            ? "selected" : ""}
+        >
+          contacted
+        </option>
+
+        <option
+          value="closed"
+          ${lead.status === "closed"
+            ? "selected" : ""}
+        >
+          closed
+        </option>
+
+      </select>
+
+      <br>
+
+      <button
+        class="delete-btn"
+        onclick="
+          deleteLead(
+            '${lead._id}'
+          )
+        "
+      >
+        Delete
+      </button>
+
+    `;
+
+    list.appendChild(div);
+
+  });
+
+}
+
+
+/* UPDATE STATUS */
+
+async function updateStatus(id, status){
+
+  await fetch(
+    API + "/" + id,
+    {
+
+      method:"PUT",
+
+      headers:{
+        "Content-Type":
+          "application/json"
+      },
+
+      body:JSON.stringify({
+        status
+      })
+
+    }
+  );
+
+  loadLeads();
+
+}
+
+
+/* DELETE LEAD */
+
+async function deleteLead(id){
+
+  const confirmDelete =
+    confirm(
+      "Delete this lead?"
+    );
+
+  if(!confirmDelete) return;
+
+  await fetch(
+    API + "/" + id,
+    {
+      method:"DELETE"
+    }
+  );
+
+  loadLeads();
+
+}
+
+window.onload = loadLeads;
+
+</script>
+
+</body>
+</html>
